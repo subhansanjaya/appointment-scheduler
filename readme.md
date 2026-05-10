@@ -1,6 +1,6 @@
 # A conversational AI agent
 
-An appointment scheduler built with FastAPI, React, and OpenAI function calling to create and manage calendar events. Built as a learning + SaaS prototype project for AI agent systems and scheduling automation.
+An appointment scheduler built with FastAPI, React, and OpenAI function calling to create and manage calendar events. Built as a prototype project for AI agent systems and scheduling automation.
 
 ---
 
@@ -77,9 +77,10 @@ appointment-scheduler/
 │
 ├── venv/
 └── README.md
+```
 
-
- Environment Variables
+---
+## Environment Variables
 
 Create a .env file in the backend folder:
 
@@ -90,7 +91,7 @@ For Google Calendar (if enabled):
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
 
-▶Run Backend
+## Run Backend
 cd backend
 source ../venv/bin/activate
 uvicorn main:app --reload
@@ -99,7 +100,7 @@ Backend runs at:
 
 http://127.0.0.1:8000
 
-Run Frontend
+##  Run Frontend
 cd frontend
 npm install
 npm run dev
@@ -107,8 +108,7 @@ npm run dev
 Frontend runs at:
 http://localhost:5173
 
-
-Google Calendar Setup
+## Google Calendar Setup
 
 To enable calendar integration:
 
@@ -119,12 +119,12 @@ Download credentials.json
 Place it inside /backend
 
 
-Future Enhancements
+##  Future Enhancements
 Multi-user authentication
 Persistent database (PostgreSQL)
 Real-time chat streaming
 Google Calendar full OAuth flow
 LangChain / LangGraph upgrade
 
-License
+## License
 MIT License
