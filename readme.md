@@ -84,49 +84,45 @@ appointment-scheduler/
 ---
 ## Environment Variables
 
-Create a .env file in the backend folder:
+- Create a .env file in the backend folder:
 
-OPENAI_API_KEY=your_openai_api_key
+- OPENAI_API_KEY=your_openai_api_key
 
 For Google Calendar (if enabled):
 
-GOOGLE_CLIENT_ID=your_client_id
-GOOGLE_CLIENT_SECRET=your_client_secret
+- GOOGLE_CLIENT_ID=your_client_id
+- GOOGLE_CLIENT_SECRET=your_client_secret
 
 ## Run Backend
-cd backend
-source ../venv/bin/activate
-uvicorn main:app --reload
-
-Backend runs at:
-
-http://127.0.0.1:8000
+- cd backend
+- source ../venv/bin/activate
+- uvicorn main:app --reload
+- Backend runs at: 127.0.0.1:8000
 
 ##  Run Frontend
-cd frontend
-npm install
-npm run dev
+- cd frontend
+- npm install
+- npm run dev
 
-Frontend runs at:
-http://localhost:5173
+Frontend runs at:localhost:5173
 
 ## Google Calendar Setup
 
 To enable calendar integration:
 
-Go to Google Cloud Console
-Enable Google Calendar API
-Create OAuth credentials
-Download credentials.json
-Place it inside /backend
+- Go to Google Cloud Console
+- Enable Google Calendar API
+- Create OAuth credentials
+- Download credentials.json
+- Place it inside /backend
 
 
 ##  Future Enhancements
-Multi-user authentication
-Persistent database (PostgreSQL)
-Real-time chat streaming
-Google Calendar full OAuth flow
-LangChain / LangGraph upgrade
+- Multi-user authentication
+- Persistent database (PostgreSQL)
+- Real-time chat streaming
+- Google Calendar full OAuth flow
+- LangChain / LangGraph upgrade
 
 ## License
 MIT License
