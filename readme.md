@@ -118,6 +118,7 @@ To enable calendar integration:
 
 
 ##  Future Enhancements
+- Should add unit tests
 - Multi-user authentication
 - Persistent database (PostgreSQL)
 - Real-time chat streaming
