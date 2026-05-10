@@ -2,6 +2,8 @@
 
 An appointment scheduler built with FastAPI, React, and OpenAI function calling to create and manage calendar events. Built as a prototype project for AI agent systems and scheduling automation.
 
+![screenshot](https://github.com/subhansanjaya/ai-assisted-dev-toolkit/blob/main/capture.png)
+
 ---
 
 ## Features
