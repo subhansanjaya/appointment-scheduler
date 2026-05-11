@@ -1,48 +1,50 @@
-# backend/calendar_service.py
 """
 Calendar Service Module
 
-This module provides functionality to interact with Google Calendar API.
-It includes functions to authenticate, create events, check availability,
-and delete events from the primary calendar.
+Provides Google Calendar integration:
+- OAuth authentication (persisted token)
+- Create events
+- Check availability
+- Delete events
 """
 
+import os
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
+
+# -----------------------------
+# AUTH 
+# -----------------------------
 def get_service():
-    """
-    Authenticate and build the Google Calendar service.
+    creds = None
 
-    This function handles OAuth 2.0 authentication using client secrets
-    and returns a service object for interacting with the Calendar API.
+    # Load saved token if available
+    if os.path.exists("token.json"):
+        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
 
-    Returns:
-        googleapiclient.discovery.Resource: The Calendar API service object.
-    """
-    flow = InstalledAppFlow.from_client_secrets_file(
-        "credentials.json",
-        SCOPES
-    )
-    creds = flow.run_local_server(port=0)
+    # If no valid creds → login once
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            "credentials.json",
+            SCOPES
+        )
+        creds = flow.run_local_server(port=0)
+
+        # Save token for future use
+        with open("token.json", "w") as token:
+            token.write(creds.to_json())
+
     return build("calendar", "v3", credentials=creds)
 
 
+# -----------------------------
+# CREATE EVENT
+# -----------------------------
 def create_event(title, start, end, email):
-    """
-    Create a new event in the primary Google Calendar.
-
-    Args:
-        title (str): The title/summary of the event.
-        start (str): The start date and time in ISO format (e.g., '2023-10-01T10:00:00').
-        end (str): The end date and time in ISO format (e.g., '2023-10-01T11:00:00').
-        email (str): The email address of the attendee.
-
-    Returns:
-        str: The ID of the created event.
-    """
     service = get_service()
 
     event = {
@@ -52,53 +54,89 @@ def create_event(title, start, end, email):
         "attendees": [{"email": email}]
     }
 
-    event = service.events().insert(
-        calendarId="primary",
-        body=event
-    ).execute()
+    try:
+        created_event = service.events().insert(
+            calendarId="primary",
+            body=event
+        ).execute()
 
-    return event["id"]
+        print("\n=== GOOGLE CALENDAR RESPONSE ===")
+        print("Event ID:", created_event.get("id"))
+        print("HTML Link:", created_event.get("htmlLink"))
+        print("Status:", created_event.get("status"))
+        print("================================\n")
 
+        if not created_event.get("id"):
+            return {"error": "Event creation failed"}
+
+        return {
+            "success": True,
+            "event_id": created_event.get("id"),
+            "link": created_event.get("htmlLink"),
+            "status": created_event.get("status")
+        }
+
+    except Exception as e:
+        print("CALENDAR ERROR:", str(e))
+        return {"error": str(e)}
+
+
+# -----------------------------
+# CHECK AVAILABILITY 
+# -----------------------------
 def check_availability(start, end):
-    """
-    Check for existing events in the primary calendar within a time range.
-
-    This function retrieves upcoming events to check availability.
-    Note: Currently returns all events, but can be modified to filter by time.
-
-    Args:
-        start (str): The start time for checking availability (ISO format).
-        end (str): The end time for checking availability (ISO format).
-
-    Returns:
-        list: A list of event dictionaries from the calendar.
-    """
     service = get_service()
 
-    events_result = service.events().list(
-        calendarId="primary",
-        maxResults=10,
-        singleEvents=True,
-        orderBy="startTime"
-    ).execute()
+    def normalize(dt):
+        if "Z" not in dt and "+" not in dt:
+            return dt + "+05:30"
+        return dt
 
-    return events_result.get("items", [])
+    start = normalize(start)
+    end = normalize(end)
 
+    print("\n=== AVAILABILITY DEBUG ===")
+    print("START:", start)
+    print("END:", end)
+    print("==========================\n")
+
+    try:
+        events_result = service.events().list(
+            calendarId="primary",
+            timeMin=start,
+            timeMax=end,
+            singleEvents=True,
+            orderBy="startTime"
+        ).execute()
+
+        items = events_result.get("items", [])
+
+        print("EVENT COUNT:", len(items))
+
+        for e in items:
+            print(" -", e.get("summary"), "|", e["start"])
+
+        return items
+
+    except Exception as e:
+        print("AVAILABILITY ERROR:", str(e))
+        return {"error": str(e)}
+
+
+# -----------------------------
+# DELETE EVENT
+# -----------------------------
 def delete_event(event_id):
-    """
-    Delete an event from the primary Google Calendar.
-
-    Args:
-        event_id (str): The ID of the event to delete.
-
-    Returns:
-        bool: True if the event was successfully deleted.
-    """
     service = get_service()
 
-    service.events().delete(
-        calendarId="primary",
-        eventId=event_id
-    ).execute()
+    try:
+        service.events().delete(
+            calendarId="primary",
+            eventId=event_id
+        ).execute()
 
-    return True
+        return {"success": True}
+
+    except Exception as e:
+        print("DELETE ERROR:", str(e))
+        return {"error": str(e)}

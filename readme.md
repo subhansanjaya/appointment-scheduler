@@ -4,6 +4,8 @@ An appointment scheduler built with FastAPI, React, and OpenAI function calling 
 
 ![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture.png)
 
+![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture2.png)
+
 ---
 
 ## Features

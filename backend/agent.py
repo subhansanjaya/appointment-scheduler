@@ -3,43 +3,88 @@ from openai import OpenAI
 from backend.tools import tool_map
 from dotenv import load_dotenv
 from prompts.build_prompt import build_system_prompt
+from datetime import datetime
 import os
+
 load_dotenv()
 
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 messages = []
 
-SYSTEM_PROMPT = build_system_prompt()
 
+# -----------------------------
+# SYSTEM PROMPT
+# -----------------------------
+def get_system_prompt():
+    today = datetime.now().strftime("%Y-%m-%d")
+    return build_system_prompt(today)
+
+
+# -----------------------------
+# MAIN ENTRY POINT
+# -----------------------------
 def run_agent(user_input):
-    messages.append({"role": "system", "content": SYSTEM_PROMPT})
+
+    # IMPORTANT: refresh system prompt correctly
+    if not messages:
+        messages.append({
+            "role": "system",
+            "content": get_system_prompt()
+        })
+
     messages.append({"role": "user", "content": user_input})
 
     res = client.chat.completions.create(
         model="gpt-4o",
-        # model="gpt-4o",
         messages=messages
     )
 
-    content = res.choices[0].message.content
-    messages.append({"role": "assistant", "content": content})
+    message = res.choices[0].message.content
+    messages.append({"role": "assistant", "content": message})
 
-    return process(content)
+    return process(message)
 
 
+# -----------------------------
+# TOOL PROCESSOR
+# -----------------------------
 def process(response):
     data = json.loads(response)
 
-    if data["to"] == "user":
-        return data["message"]
+    if data.get("to") == "user":
+        return data.get("message")
 
     fn = data["function_call"]["function"]
     args = data["function_call"]["arguments"]
 
-    result = tool_map[fn](*args)
+    if isinstance(args, str):
+        args = json.loads(args)
 
-    follow_up = run_agent(f"function result: {result}")
-    return follow_up
+    print("\n--- TOOL CALL ---")
+    print("Function:", fn)
+    print("Args:", args)
+
+    if fn not in tool_map:
+        return f"Unknown tool: {fn}"
+
+    try:
+        result = tool_map[fn](**args)
+    except Exception as e:
+        return f"Tool execution failed: {str(e)}"
+
+    print("Result:", result)
+
+    if isinstance(result, dict) and result.get("error"):
+        return f"Failed: {result['error']}"
+
+    if fn == "schedule_appointment":
+        return "Appointment successfully scheduled."
+
+    if fn == "check_appointment_availability":
+        return f"Availability checked: {result}"
+
+    if fn == "delete_appointment":
+        return "🗑️ Appointment deleted successfully."
+
+    return "Action completed successfully."
