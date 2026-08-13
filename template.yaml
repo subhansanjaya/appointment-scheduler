@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+
+  AppointmentApi:
+    Type: AWS::Serverless::Function
+
+    Properties:
+      Runtime: python3.12
+
+      Handler: backend.main.handler
+
+      CodeUri: .
+
+      MemorySize: 512
+
+      Timeout: 30
+
+      Environment:
+        Variables:
+          GOOGLE_CALENDAR_SECRET: appointment-scheduler/google-calendar
+
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: "*"
+
+      Events:
+
+        Api:
+          Type: Api
+
+          Properties:
+            Path: /{proxy+}
+            Method: ANY

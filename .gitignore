@@ -1,0 +1,53 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
+
+# Virtual environment
+venv/
+ENV/
+
+# dotenv
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# =========================
+# React / Node
+# =========================
+node_modules/
+dist/
+build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vite
+.vite/
+
+# =========================
+# Google credentials
+# =========================
+credentials.json
+token.json
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log

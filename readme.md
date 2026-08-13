@@ -102,6 +102,7 @@ For Google Calendar (if enabled):
 - Backend runs at: 127.0.0.1:8000
 
 ##  Run Frontend
+- create .env.development with VITE_API_URL=http://localhost:8000 / .env.production for production deployment (npm run build)
 - cd frontend
 - npm install
 - npm run dev
