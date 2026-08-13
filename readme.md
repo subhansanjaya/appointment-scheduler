@@ -1,6 +1,6 @@
-# A conversational AI agent
+# AI Appointment Scheduler
 
-An appointment scheduler built with FastAPI, React, and OpenAI function calling to create and manage calendar events. Built as a prototype project for AI agent systems and scheduling automation.
+A conversational appointment scheduler built with FastAPI, React, OpenAI and Google Calendar. The project demonstrates an AI agent architecture where natural-language scheduling requests are interpreted by an LLM and translated into calendar actions through a tool execution layer.
 
 ![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture.png)
 
@@ -10,13 +10,16 @@ An appointment scheduler built with FastAPI, React, and OpenAI function calling 
 
 ## Features
 
-- AI chatbot interface for booking appointments
-- LLM-powered decision making (agent-based system)
-- Schedule, check, and delete appointments via tools
-- Backend function calling system (tool execution layer)
-- FastAPI backend for API handling
-- React frontend for chat UI
+- AI chatbot interface for appointment scheduling
+- LLM-powered scheduling agent
+- Scheduling intent classification layer
+- Book appointments
+- Check calendar availability
+- Delete appointments
 - Google Calendar integration
+- Structured agent responses
+- Backend tool execution layer
+
 
 ---
 
@@ -46,8 +49,19 @@ An appointment scheduler built with FastAPI, React, and OpenAI function calling 
 - Fetch API / Axios
 
 ### AI Layer
-- OpenAI GPT models (function calling)
-- Agent-based orchestration logic
+- OpenAI GPT models
+- Intent classification
+- Agent-based orchestration
+- Structured JSON responses
+- Tool execution
+
+### Infrastructure
+
+- AWS Lambda
+- API Gateway
+- AWS Secrets Manager
+- Amazon S3
+- Amazon CloudFront
 
 ---
 
@@ -78,6 +92,8 @@ appointment-scheduler/
 │   ├── src/
 │   │   ├── Chat.tsx
 │   │   └── api.ts
+    └── .env.development
+    └── .env.production
 │
 ├── venv/
 └── README.md
@@ -90,10 +106,11 @@ appointment-scheduler/
 
 - OPENAI_API_KEY=your_openai_api_key
 
-For Google Calendar (if enabled):
+- INTENT_MODEL=gpt-4o-mini
+- AGENT_MODEL=gpt-4o
 
-- GOOGLE_CLIENT_ID=your_client_id
-- GOOGLE_CLIENT_SECRET=your_client_secret
+For Google Calendar (if enabled):
+- GOOGLE_CREDENTIALS=credentials.json
 
 ## Run Backend
 - cd backend
@@ -119,6 +136,7 @@ To enable calendar integration:
 - Download credentials.json
 - Place it inside /backend
 
+For AWS Lambda, the Google OAuth credentials are stored in AWS Secrets Manager instead of being included in the Lambda deployment package.
 
 ##  Future Enhancements
 - Should add unit tests
@@ -128,5 +146,40 @@ To enable calendar integration:
 - Google Calendar full OAuth flow
 - LangChain / LangGraph upgrade
 
+## Version History
+
+### v1.0.0 — Single User (MVP)
+
+Current stable release.
+
+Includes:
+
+- Appointment scheduling
+- Calendar availability checking
+- Appointment deletion
+- AI scheduling agent
+- Scheduling intent layer
+- Google Calendar integration
+
+---
+
+## Future Improvements
+
+- Authentication and authorization
+- AI evaluation framework
+- Intent classification evaluation
+- Improved error handling
+- Unit and integration tests
+- Persistent database
+- Streaming responses
+- Better observability
+- Rate limiting
+- Usage-based quotas
+- Multi-user Google Calendar integration
+- Asynchronous background processing
+
+---
+
 ## License
+
 MIT License
