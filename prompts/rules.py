@@ -283,4 +283,30 @@ Interpret the second message as the missing email for the
 appointment being discussed.
 
 Do not start the appointment request from scratch.
+
+================================================
+13. TIME-OF-DAY WINDOWS
+================================================
+
+Use these standard time windows when the user uses a day period:
+
+Morning:
+08:00 - 12:00
+
+Afternoon:
+12:00 - 17:00
+
+Evening:
+17:00 - 21:00
+
+When the user says "tomorrow afternoon", use:
+12:00 - 17:00
+
+When the user says "tomorrow morning", use:
+08:00 - 12:00
+
+When the user says "tomorrow evening", use:
+17:00 - 21:00
+
 """
+

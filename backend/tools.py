@@ -2,13 +2,14 @@
 from backend.calendar_service import (
     create_event,
     check_availability,
+    find_available_slots,
     delete_event,
 )
-
 
 tool_map = {
     "schedule_appointment": create_event,
     "check_appointment_availability": check_availability,
+    "find_available_slots": find_available_slots,
     "delete_appointment": delete_event,
 }
 
@@ -24,31 +25,25 @@ openai_tools = [
                 "properties": {
                     "title": {
                         "type": "string",
-                        "description": "Title of the appointment."
+                        "description": "Title of the appointment.",
                     },
                     "start": {
                         "type": "string",
-                        "description": "Appointment start time in ISO 8601 format."
+                        "description": "Appointment start time in ISO 8601 format.",
                     },
                     "end": {
                         "type": "string",
-                        "description": "Appointment end time in ISO 8601 format."
+                        "description": "Appointment end time in ISO 8601 format.",
                     },
                     "email": {
                         "type": "string",
-                        "description": "Email address associated with the appointment."
-                    }
+                        "description": "Email address associated with the appointment.",
+                    },
                 },
-                "required": [
-                    "title",
-                    "start",
-                    "end",
-                    "email"
-                ]
-            }
-        }
+                "required": ["title", "start", "end", "email"],
+            },
+        },
     },
-
     {
         "type": "function",
         "function": {
@@ -59,21 +54,50 @@ openai_tools = [
                 "properties": {
                     "start": {
                         "type": "string",
-                        "description": "Start of the period to check in ISO 8601 format."
+                        "description": "Start of the period to check in ISO 8601 format.",
                     },
                     "end": {
                         "type": "string",
-                        "description": "End of the period to check in ISO 8601 format."
-                    }
+                        "description": "End of the period to check in ISO 8601 format.",
+                    },
+                },
+                "required": ["start", "end"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_available_slots",
+            "description": (
+                "Find available appointment slots within a specified " "time window."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "window_start": {
+                        "type": "string",
+                        "description": (
+                            "Start of the search window in ISO 8601 format."
+                        ),
+                    },
+                    "window_end": {
+                        "type": "string",
+                        "description": ("End of the search window in ISO 8601 format."),
+                    },
+                    "duration_minutes": {
+                        "type": "integer",
+                        "description": ("Required appointment duration in minutes."),
+                    },
                 },
                 "required": [
-                    "start",
-                    "end"
-                ]
-            }
-        }
+                    "window_start",
+                    "window_end",
+                    "duration_minutes",
+                ],
+            },
+        },
     },
-
     {
         "type": "function",
         "function": {
@@ -84,13 +108,11 @@ openai_tools = [
                 "properties": {
                     "event_id": {
                         "type": "string",
-                        "description": "Google Calendar event ID."
+                        "description": "Google Calendar event ID.",
                     }
                 },
-                "required": [
-                    "event_id"
-                ]
-            }
-        }
-    }
+                "required": ["event_id"],
+            },
+        },
+    },
 ]
