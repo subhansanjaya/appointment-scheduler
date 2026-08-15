@@ -1,30 +1,19 @@
 import json
-import os
 from datetime import datetime
-
-from dotenv import load_dotenv
 from openai import OpenAI
-
-from backend.intent import classify_intent
-from backend.tools import tool_map
+from backend.config import OPENAI_API_KEY, AGENT_MODEL
+from backend.conversation_service import (
+    get_or_create_conversation,
+    get_messages,
+    save_message,
+)
+from backend.tools import tool_map, openai_tools
 from prompts.build_prompt import build_system_prompt
 
 
-load_dotenv()
-
-
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=OPENAI_API_KEY
 )
-
-
-AGENT_MODEL = os.getenv(
-    "AGENT_MODEL",
-    "gpt-4o"
-)
-
-
-messages = []
 
 
 # -----------------------------
@@ -41,161 +30,210 @@ def get_system_prompt():
 # MAIN ENTRY POINT
 # -----------------------------
 
-def run_agent(user_input):
+def run_agent(
+    db,
+    user_id,
+    user_input,
+):
 
     # ---------------------------------
-    # INTENT GATE
+    # GET CONVERSATION
     # ---------------------------------
 
-    intent = classify_intent(user_input)
+    conversation = get_or_create_conversation(
+        db,
+        user_id,
+    )
 
-    print("\n=== INTENT CLASSIFICATION ===")
-    print("Input:", user_input)
-    print("Intent:", intent)
-    print("=============================\n")
-
-    if intent != "SCHEDULING":
-        return (
-            "I'm an appointment scheduling assistant. "
-            "I can help you book, check, cancel, or "
-            "reschedule appointments."
-        )
+    messages = get_messages(
+        db,
+        conversation.id,
+    )
 
     # ---------------------------------
-    # INITIALIZE SYSTEM PROMPT
+    # SAVE USER MESSAGE
     # ---------------------------------
 
-    if not messages:
-        messages.append({
+    save_message(
+        db,
+        conversation.id,
+        "user",
+        user_input,
+    )
+
+    # ---------------------------------
+    # BUILD LLM MESSAGES
+    # ---------------------------------
+
+    llm_messages = [
+        {
             "role": "system",
-            "content": get_system_prompt()
-        })
+            "content": get_system_prompt(),
+        }
+    ]
 
-    # ---------------------------------
-    # ADD USER MESSAGE
-    # ---------------------------------
+    llm_messages.extend(messages)
 
-    messages.append({
+    llm_messages.append({
         "role": "user",
-        "content": user_input
+        "content": user_input,
     })
 
     # ---------------------------------
-    # CALL AGENT
+    # FIRST LLM CALL
     # ---------------------------------
 
     res = client.chat.completions.create(
         model=AGENT_MODEL,
-        messages=messages
+        messages=llm_messages,
+        tools=openai_tools,
     )
 
-    message = res.choices[0].message.content
-
-    messages.append({
-        "role": "assistant",
-        "content": message
-    })
+    message = res.choices[0].message
 
     # ---------------------------------
-    # PROCESS RESPONSE
+    # NORMAL RESPONSE
     # ---------------------------------
 
-    return process(message)
+    if not message.tool_calls:
 
+        final_response = message.content
 
-# -----------------------------
-# TOOL PROCESSOR
-# -----------------------------
-
-def process(response):
-
-    try:
-        data = json.loads(response)
-
-    except json.JSONDecodeError:
-        print("INVALID AGENT RESPONSE:", response)
-
-        return (
-            "Sorry, I couldn't process that request. "
-            "Please try again."
+        save_message(
+            db,
+            conversation.id,
+            "assistant",
+            final_response,
         )
 
-    # ---------------------------------
-    # NORMAL USER RESPONSE
-    # ---------------------------------
-
-    if data.get("to") == "user":
-        return data.get("message")
+        return final_response
 
     # ---------------------------------
     # TOOL CALL
     # ---------------------------------
 
-    function_call = data.get("function_call")
+    # Add the assistant's native tool-call
+    # message to the conversation.
+    llm_messages.append(message)
 
-    if not function_call:
-        return (
-            "Sorry, I couldn't determine what action "
-            "to take."
+    # ---------------------------------
+    # SAVE ASSISTANT TOOL CALL
+    # ---------------------------------
+
+    tool_calls_data = []
+
+    for tool_call in message.tool_calls:
+
+        tool_calls_data.append({
+            "id": tool_call.id,
+            "type": "function",
+            "function": {
+                "name": tool_call.function.name,
+                "arguments": tool_call.function.arguments,
+            },
+        })
+
+    save_message(
+        db,
+        conversation.id,
+        "assistant",
+        json.dumps({
+            "tool_calls": tool_calls_data
+        }),
+    )
+
+    # ---------------------------------
+    # EXECUTE TOOLS
+    # ---------------------------------
+
+    for tool_call in message.tool_calls:
+
+        fn = tool_call.function.name
+
+        args = json.loads(
+            tool_call.function.arguments
         )
 
-    fn = function_call.get("function")
-    args = function_call.get("arguments", {})
+        print("\n--- TOOL CALL ---")
+        print("Function:", fn)
+        print("Args:", args)
 
-    if isinstance(args, str):
+        # ---------------------------------
+        # CHECK TOOL
+        # ---------------------------------
+
+        if fn not in tool_map:
+            return f"Unknown tool: {fn}"
+
+        # ---------------------------------
+        # INJECT AUTHENTICATED USER
+        # ---------------------------------
+
+        args["user_id"] = user_id
+
+        # ---------------------------------
+        # EXECUTE TOOL
+        # ---------------------------------
+
         try:
-            args = json.loads(args)
-        except json.JSONDecodeError:
-            return "Invalid tool arguments."
 
-    print("\n--- TOOL CALL ---")
-    print("Function:", fn)
-    print("Args:", args)
+            result = tool_map[fn](**args)
 
-    # ---------------------------------
-    # CHECK TOOL
-    # ---------------------------------
+        except Exception as e:
 
-    if fn not in tool_map:
-        return f"Unknown tool: {fn}"
+            print("TOOL ERROR:", str(e))
 
-    # ---------------------------------
-    # EXECUTE TOOL
-    # ---------------------------------
+            result = {
+                "error": str(e)
+            }
 
-    try:
-        result = tool_map[fn](**args)
+        print("Result:", result)
 
-    except Exception as e:
-        print("TOOL ERROR:", str(e))
+        # ---------------------------------
+        # SAVE TOOL RESULT
+        # ---------------------------------
 
-        return (
-            f"Tool execution failed: {str(e)}"
+        save_message(
+            db,
+            conversation.id,
+            "tool",
+            json.dumps(result),
+            tool_call_id=tool_call.id,
         )
 
-    print("Result:", result)
+        # ---------------------------------
+        # SEND TOOL RESULT TO OPENAI
+        # ---------------------------------
+
+        llm_messages.append({
+            "role": "tool",
+            "tool_call_id": tool_call.id,
+            "content": json.dumps(result),
+        })
 
     # ---------------------------------
-    # HANDLE TOOL ERROR
+    # SECOND LLM CALL
     # ---------------------------------
 
-    if (
-        isinstance(result, dict)
-        and result.get("error")
-    ):
-        return f"Failed: {result['error']}"
+    final_res = client.chat.completions.create(
+        model=AGENT_MODEL,
+        messages=llm_messages,
+        tools=openai_tools,
+    )
+
+    final_message = final_res.choices[0].message
+
+    final_response = final_message.content
 
     # ---------------------------------
-    # TOOL RESPONSES
+    # SAVE FINAL RESPONSE
     # ---------------------------------
 
-    if fn == "schedule_appointment":
-        return "Appointment successfully scheduled."
+    save_message(
+        db,
+        conversation.id,
+        "assistant",
+        final_response,
+    )
 
-    if fn == "check_appointment_availability":
-        return f"Availability checked: {result}"
-
-    if fn == "delete_appointment":
-        return "🗑️ Appointment deleted successfully."
-
-    return "Action completed successfully."
+    return final_response

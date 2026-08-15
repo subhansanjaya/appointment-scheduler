@@ -19,11 +19,12 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+from backend.database import SessionLocal
+from backend.models import GoogleAccount
 
 SCOPES = [
     "https://www.googleapis.com/auth/calendar"
 ]
-
 
 # -----------------------------
 # CONFIGURATION
@@ -221,34 +222,58 @@ def get_lambda_service():
 # GET CALENDAR SERVICE
 # -----------------------------
 
-def get_service():
-    """
-    Return the appropriate Google Calendar service.
+def get_service(user_id: int):
 
-    Local:
-        Uses token.json / credentials.json
+    db = SessionLocal()
 
-    Lambda:
-        Uses AWS Secrets Manager
-    """
+    try:
+        google_account = (
+            db.query(GoogleAccount)
+            .filter(
+                GoogleAccount.user_id == user_id
+            )
+            .first()
+        )
 
-    if IS_LAMBDA:
-        return get_lambda_service()
+        if not google_account:
+            raise RuntimeError(
+                "Google Calendar is not connected for this user."
+            )
 
-    return get_local_service()
+        creds = Credentials(
+            token=None,
+            refresh_token=google_account.refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=os.getenv("GOOGLE_CLIENT_ID"),
+            client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+            scopes=SCOPES,
+        )
+
+        if not creds.valid:
+
+            if not creds.refresh_token:
+                raise RuntimeError(
+                    "Google Calendar refresh token is missing."
+                )
+
+            creds.refresh(Request())
+
+        return build(
+            "calendar",
+            "v3",
+            credentials=creds
+        )
+
+    finally:
+        db.close()
 
 
 # -----------------------------
 # CREATE EVENT
 # -----------------------------
 
-def create_event(
-    title,
-    start,
-    end,
-    email
-):
-    service = get_service()
+def create_event(user_id, title, start, end, email):
+    service = get_service(user_id)
 
     event = {
         "summary": title,
@@ -333,11 +358,8 @@ def create_event(
 # CHECK AVAILABILITY
 # -----------------------------
 
-def check_availability(
-    start,
-    end
-):
-    service = get_service()
+def check_availability(user_id, start, end):
+    service = get_service(user_id)
 
     def normalize(dt):
 
@@ -421,10 +443,8 @@ def check_availability(
 # DELETE EVENT
 # -----------------------------
 
-def delete_event(
-    event_id
-):
-    service = get_service()
+def delete_event(user_id, event_id):
+    service = get_service(user_id)
 
     try:
 
