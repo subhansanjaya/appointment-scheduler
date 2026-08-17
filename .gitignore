@@ -12,6 +12,7 @@ venv/
 .env
 .env.*
 !.env.example
+global-bundle.pem
 
 # Virtual environment
 venv/

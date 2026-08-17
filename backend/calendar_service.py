@@ -415,6 +415,86 @@ def find_available_slots(
 
 
 # -----------------------------
+# FIND EVENTS
+# -----------------------------
+
+def find_events(
+    user_id,
+    start,
+    end,
+):
+    """
+    Find calendar events within a specific time range.
+    """
+
+    service = get_service(user_id)
+
+    def normalize(dt):
+        if "Z" not in dt and "+" not in dt:
+            return dt + "+05:30"
+
+        return dt
+
+    start = normalize(start)
+    end = normalize(end)
+
+    print("\n=== FIND EVENTS ===")
+    print("START:", start)
+    print("END:", end)
+    print("===================\n")
+
+    try:
+
+        events_result = (
+            service.events()
+            .list(
+                calendarId="primary",
+                timeMin=start,
+                timeMax=end,
+                singleEvents=True,
+                orderBy="startTime",
+            )
+            .execute()
+        )
+
+        events = events_result.get(
+            "items",
+            []
+        )
+
+        print(
+            "EVENT COUNT:",
+            len(events)
+        )
+
+        return {
+            "success": True,
+            "events": [
+                {
+                    "id": event.get("id"),
+                    "summary": event.get("summary"),
+                    "start": event.get("start"),
+                    "end": event.get("end"),
+                    "status": event.get("status"),
+                    "htmlLink": event.get("htmlLink"),
+                }
+                for event in events
+            ],
+        }
+
+    except Exception as e:
+
+        print(
+            "FIND EVENTS ERROR:",
+            str(e)
+        )
+
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+# -----------------------------
 # DELETE EVENT
 # -----------------------------
 
@@ -433,3 +513,126 @@ def delete_event(user_id, event_id):
         print("DELETE ERROR:", str(e))
 
         return {"error": str(e)}
+
+# -----------------------------
+# UPDATE EVENT
+# -----------------------------
+
+def update_event(
+    user_id,
+    event_id,
+    start,
+    end,
+):
+    """
+    Update an existing Google Calendar event
+    with a new start and end time.
+    """
+
+    service = get_service(user_id)
+
+    try:
+
+        # ---------------------------------
+        # Get existing event
+        # ---------------------------------
+
+        event = (
+            service.events()
+            .get(
+                calendarId="primary",
+                eventId=event_id,
+            )
+            .execute()
+        )
+
+        # ---------------------------------
+        # Update time
+        # ---------------------------------
+
+        event["start"] = {
+            "dateTime": start,
+            "timeZone": "Asia/Colombo",
+        }
+
+        event["end"] = {
+            "dateTime": end,
+            "timeZone": "Asia/Colombo",
+        }
+
+        # ---------------------------------
+        # Update Google Calendar
+        # ---------------------------------
+
+        updated_event = (
+            service.events()
+            .update(
+                calendarId="primary",
+                eventId=event_id,
+                body=event,
+            )
+            .execute()
+        )
+
+        print(
+            "\n=== GOOGLE CALENDAR UPDATE ==="
+        )
+
+        print(
+            "Event ID:",
+            updated_event.get("id"),
+        )
+
+        print(
+            "HTML Link:",
+            updated_event.get("htmlLink"),
+        )
+
+        print(
+            "Status:",
+            updated_event.get("status"),
+        )
+
+        print(
+            "===============================\n"
+        )
+
+        if not updated_event.get("id"):
+
+            return {
+                "success": False,
+                "error": (
+                    "Event update failed."
+                ),
+            }
+
+        return {
+            "success": True,
+            "event_id": updated_event.get(
+                "id"
+            ),
+            "link": updated_event.get(
+                "htmlLink"
+            ),
+            "status": updated_event.get(
+                "status"
+            ),
+            "start": updated_event.get(
+                "start"
+            ),
+            "end": updated_event.get(
+                "end"
+            ),
+        }
+
+    except Exception as e:
+
+        print(
+            "UPDATE EVENT ERROR:",
+            str(e)
+        )
+
+        return {
+            "success": False,
+            "error": str(e),
+        }
