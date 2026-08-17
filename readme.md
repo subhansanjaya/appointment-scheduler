@@ -6,7 +6,7 @@ A conversational appointment scheduler built with FastAPI, React, OpenAI and Goo
 
 ![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture2.png)
 
-![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture3.png)
+![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/feature/v2-multi-user/capture3.png)
 ---
 
 ## Features

@@ -266,7 +266,7 @@ async def google_callback(
 
     return RedirectResponse(
         url=(
-            "https://d32obth2v9hhu6.cloudfront.net/"
+            "http://localhost:5173/"
             "?authenticated=true"
         )
     )
