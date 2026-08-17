@@ -6,6 +6,7 @@ A conversational appointment scheduler built with FastAPI, React, OpenAI and Goo
 
 ![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture2.png)
 
+![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture3.png)
 ---
 
 ## Features
@@ -160,6 +161,19 @@ Includes:
 - AI scheduling agent
 - Scheduling intent layer
 - Google Calendar integration
+
+### v2.0.0 — Multi-User Architecture: 
+
+This version introduces:
+- Google OAuth authentication
+- user-specific sessions and Google Calendar access
+- PostgreSQL-based persistence for users and Google accounts
+- persistent conversation state
+- multi-turn scheduling workflows. 
+
+The backend uses FastAPI and LangGraph to handle availability and booking workflows, with the application deployed using AWS Lambda, API Gateway, Amazon RDS, NAT Gateway, S3, and CloudFront.
+
+> **Note:** The v2.0.0 code has been committed to the `feature/v2-multi-user` branch but has not been tagged yet. The release will be tagged as `v2.0.0` after the planned refactoring and final cleanup.
 
 ---
 

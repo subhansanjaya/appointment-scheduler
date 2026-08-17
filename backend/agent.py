@@ -1683,35 +1683,10 @@ def run_agent(
         return final_response
 
     # ========================================================
-    # POLICY / RAG REQUEST
+    # RAG REQUEST
     # ========================================================
 
-    policy_keywords = (
-        "policy",
-        "policies",
-        "cancellation policy",
-        "cancellation",
-        "rescheduling policy",
-        "rescheduling",
-        "refund",
-        "booking rules",
-        "appointment rules",
-        "how late",
-        "how early",
-        "default duration",
-        "appointment duration",
-        "email required",
-        "privacy",
-        "working hours",
-        "appointment hours",
-    )
-
-    is_policy_question = any(
-        keyword in user_input.lower()
-        for keyword in policy_keywords
-    )
-
-    if is_policy_question:
+    if intent == "RAG":
 
         final_response = answer_policy_question(
             user_input
@@ -1728,38 +1703,34 @@ def run_agent(
 
             return final_response
 
+        final_response = (
+            "I couldn't find an answer to that "
+            "in the available knowledge base."
+        )
+
+        save_message(
+            db,
+            conversation.id,
+            "assistant",
+            final_response,
+        )
+
+        return final_response
+
     # ========================================================
-    # NORMAL LLM REQUEST
+    # OUT OF SCOPE
     # ========================================================
 
-    llm_messages = [
-        {
-            "role": "system",
-            "content": get_system_prompt(),
-        }
-    ]
-
-    llm_messages.extend(
-        messages
-    )
-
-    llm_messages.append(
-        {
-            "role": "user",
-            "content": user_input,
-        }
-    )
-
-    response = client.chat.completions.create(
-        model=AGENT_MODEL,
-        messages=llm_messages,
-    )
-
+    # Do NOT send OTHER requests to a general-purpose LLM.
+    # This assistant is intentionally limited to:
+    #
+    #   1. Appointment scheduling
+    #   2. Questions answerable from the application RAG
+    #
     final_response = (
-        response
-        .choices[0]
-        .message
-        .content
+        "Sorry, I can only help with appointment "
+        "scheduling or questions related to the "
+        "available knowledge base."
     )
 
     save_message(

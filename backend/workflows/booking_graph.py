@@ -259,6 +259,83 @@ def _normalize_relative_dates(
     return data
 
 
+def _calculate_exact_end(
+    data: dict,
+):
+    """
+    Calculate exact_end deterministically from exact_start
+    and duration_minutes.
+
+    The LLM should extract the requested start time only.
+    Python is responsible for calculating the end time so
+    appointments crossing midnight are handled correctly.
+    """
+
+    exact_start = data.get("exact_start")
+
+    if not exact_start:
+        return data
+
+    try:
+        start_dt = datetime.fromisoformat(
+            exact_start
+        )
+
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(
+                tzinfo=ZoneInfo("Asia/Colombo")
+            )
+
+        duration_minutes = int(
+            data.get(
+                "duration_minutes",
+                30,
+            )
+        )
+
+        end_dt = start_dt + timedelta(
+            minutes=duration_minutes
+        )
+
+        data["exact_start"] = start_dt.isoformat()
+        data["exact_end"] = end_dt.isoformat()
+
+        print(
+            "\n=== EXACT TIME NORMALIZATION ==="
+        )
+
+        print(
+            "Exact start:",
+            data["exact_start"]
+        )
+
+        print(
+            "Exact end:",
+            data["exact_end"]
+        )
+
+        print(
+            "Duration:",
+            duration_minutes
+        )
+
+        print(
+            "=================================\n"
+        )
+
+    except (
+        ValueError,
+        TypeError,
+    ) as e:
+
+        print(
+            "EXACT TIME NORMALIZATION ERROR:",
+            e,
+        )
+
+    return data
+
+
 def _extract_previous_booking_context(
     conversation_history: list,
 ):
@@ -449,45 +526,37 @@ def _convert_exact_time_to_availability_window(
     data: dict,
 ):
     """
-    Convert an exact time extracted from an availability
-    follow-up into a two-hour availability window.
+    Convert an exact time into a two-hour availability window.
 
     Example:
-
         7 PM
+        -> 6 PM to 8 PM
 
-    becomes:
-
-        6 PM -> 8 PM
+    Example:
+        11:30 PM
+        -> 10:30 PM today to 12:30 AM tomorrow
     """
 
-    exact_start = data.get(
-        "exact_start"
-    )
+    exact_start = data.get("exact_start")
 
     if not exact_start:
-
         return data
 
     try:
+        start = datetime.fromisoformat(exact_start)
 
-        start = datetime.fromisoformat(
-            exact_start
-        )
-
-        data["window_start"] = (
-            start
-            - timedelta(
-                hours=1
+        # Make sure the datetime has Colombo timezone
+        if start.tzinfo is None:
+            start = start.replace(
+                tzinfo=ZoneInfo("Asia/Colombo")
             )
-        ).isoformat()
 
-        data["window_end"] = (
-            start
-            + timedelta(
-                hours=1
-            )
-        ).isoformat()
+        window_start = start - timedelta(hours=1)
+        window_end = start + timedelta(hours=1)
+
+        # Important: this automatically handles midnight rollover.
+        data["window_start"] = window_start.isoformat()
+        data["window_end"] = window_end.isoformat()
 
         data["exact_start"] = None
         data["exact_end"] = None
@@ -495,12 +564,18 @@ def _convert_exact_time_to_availability_window(
         data["needs_slot_search"] = True
         data["auto_book"] = False
 
-    except (
-        ValueError,
-        TypeError,
-    ):
+        print("\n=== CONVERTED AVAILABILITY WINDOW ===")
+        print("Exact:", start.isoformat())
+        print("Window start:", data["window_start"])
+        print("Window end:", data["window_end"])
+        print("====================================\n")
 
-        pass
+    except (ValueError, TypeError) as e:
+        print(
+            "AVAILABILITY WINDOW CONVERSION ERROR:",
+            exact_start,
+            e,
+        )
 
     return data
 
@@ -932,10 +1007,10 @@ Examples:
 Extract:
 
 exact_start = the requested 7 PM time
-exact_end = 30 minutes later
+exact_end = null
 
 The Python application will assign the correct
-calendar date for "tomorrow".
+calendar date and calculate exact_end from duration_minutes.
 
 "today at 5 PM"
 
@@ -960,8 +1035,11 @@ If the user specifies an exact appointment time:
 use:
 
 "exact_start": "...",
-"exact_end": "...",
+"exact_end": null,
 "needs_slot_search": false
+
+Python will calculate exact_end from exact_start
+and duration_minutes.
 
 If the user asks for a slot within a time window:
 
@@ -1474,6 +1552,17 @@ Return JSON only.
                 data["duration_minutes"] = 30
 
     # ========================================================
+    # DETERMINISTIC EXACT END TIME
+    # ========================================================
+
+    # Always calculate exact_end in Python for exact bookings.
+    # This correctly handles appointments that cross midnight,
+    # e.g. 11:30 PM + 30 minutes -> 12:00 AM next day.
+    data = _calculate_exact_end(
+        data
+    )
+
+    # ========================================================
     # FINAL NORMALIZATION
     # ========================================================
 
@@ -1606,6 +1695,7 @@ def find_slots(
     print(
         "\nNODE: find_slots"
     )
+    
 
     result = find_available_slots(
         user_id=state["user_id"],
@@ -1727,6 +1817,32 @@ def check_exact_time(
         }
 
     try:
+
+        start_dt = datetime.fromisoformat(
+            start
+        )
+
+        end_dt = datetime.fromisoformat(
+            end
+        )
+
+        if end_dt <= start_dt:
+
+            print(
+                "INVALID TIME RANGE:",
+                start,
+                "->",
+                end,
+            )
+
+            return {
+                "booking_result": {
+                    "success": False,
+                    "error": (
+                        "Invalid appointment time range."
+                    ),
+                }
+            }
 
         result = check_availability(
             user_id=state["user_id"],

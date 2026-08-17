@@ -334,12 +334,22 @@ def find_available_slots(
         start = parse_datetime(window_start)
         end = parse_datetime(window_end)
 
+        # Make sure the range is valid
+        if end <= start:
+            return {
+                "success": False,
+                "error": (
+                    f"Invalid availability window: "
+                    f"{start.isoformat()} -> {end.isoformat()}"
+                ),
+            }
+
         events_result = (
             service.events()
             .list(
                 calendarId="primary",
-                timeMin=window_start,
-                timeMax=window_end,
+                timeMin=start.isoformat(),
+                timeMax=end.isoformat(),
                 singleEvents=True,
                 orderBy="startTime",
             )

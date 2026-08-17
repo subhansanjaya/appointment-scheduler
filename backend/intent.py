@@ -29,6 +29,7 @@ def classify_intent(
     Returns:
 
         SCHEDULING
+        RAG
         OTHER
 
     The classifier uses conversation history so that
@@ -79,12 +80,19 @@ def classify_intent(
             {
                 "role": "system",
                 "content": f"""
-You are an intent classifier for an appointment
+You are the intent classifier for an appointment
 scheduling assistant.
 
-Return ONLY one of these two values:
+The assistant has ONLY three supported request types:
+
+1. SCHEDULING
+2. RAG
+3. OTHER
+
+Return ONLY one of:
 
 SCHEDULING
+RAG
 OTHER
 
 ==================================================
@@ -103,28 +111,34 @@ CURRENT USER MESSAGE
 SCHEDULING
 ==================================================
 
-SCHEDULING includes requests about:
+Use SCHEDULING for requests related to appointments,
+calendar events, or an ongoing scheduling conversation.
 
-- booking an appointment
-- scheduling a meeting
-- checking calendar availability
-- checking whether a time is free
-- cancelling an appointment
-- deleting an appointment
-- rescheduling an appointment
-- changing an appointment time
-- changing an appointment date
-- appointment duration
-- appointment participants
-- adding an attendee
-- calendar events
-- existing appointments
+Examples:
 
-Also classify the message as SCHEDULING when it is
-clearly answering a question from an ongoing scheduling
-conversation.
+"Book an appointment tomorrow at 5 PM"
+→ SCHEDULING
 
-For example:
+"Find me an available slot tomorrow"
+→ SCHEDULING
+
+"Is 3 PM available?"
+→ SCHEDULING
+
+"Cancel my appointment"
+→ SCHEDULING
+
+"Reschedule my appointment"
+→ SCHEDULING
+
+"What time would you prefer?"
+User: "Tomorrow at 3 PM"
+→ SCHEDULING
+
+If the user is clearly answering an assistant question
+from an ongoing scheduling conversation, use SCHEDULING.
+
+Example:
 
 assistant:
 "What email address should I associate with the appointment?"
@@ -134,7 +148,7 @@ user:
 
 → SCHEDULING
 
-Another example:
+Example:
 
 assistant:
 "What time would you prefer?"
@@ -144,17 +158,7 @@ user:
 
 → SCHEDULING
 
-Another example:
-
-assistant:
-"What would you like to call the appointment?"
-
-user:
-"Project meeting"
-
-→ SCHEDULING
-
-Another example:
+Example:
 
 assistant:
 "Would you like me to book this slot?"
@@ -165,56 +169,101 @@ user:
 → SCHEDULING
 
 ==================================================
-OTHER
+RAG
 ==================================================
 
-OTHER includes requests unrelated to appointment
-scheduling.
+Use RAG when the user is asking a question that should
+be answered using the application's connected knowledge
+base, policies, documentation, or business information.
 
 Examples:
 
-"What is the weather today?"
+"What is the cancellation policy?"
+→ RAG
 
+"What is the rescheduling policy?"
+→ RAG
+
+"What are the appointment rules?"
+→ RAG
+
+"How late can I cancel?"
+→ RAG
+
+"How early should I book?"
+→ RAG
+
+"What is the default appointment duration?"
+→ RAG
+
+"Is an email required for booking?"
+→ RAG
+
+"What are your working hours?"
+→ RAG
+
+"Tell me about your booking policy."
+→ RAG
+
+Only classify as RAG when the question is related to
+information that the application's knowledge base is
+intended to answer.
+
+==================================================
+OTHER
+==================================================
+
+Use OTHER for questions unrelated to appointment
+scheduling and unrelated to the application's
+knowledge base.
+
+Examples:
+
+"Who is the Prime Minister of Sri Lanka?"
+→ OTHER
+
+"What is the weather today?"
 → OTHER
 
 "Write me a Python program"
-
-→ OTHER
-
-"Tell me a joke"
-
 → OTHER
 
 "Explain quantum physics"
-
 → OTHER
 
+"Tell me a joke"
+→ OTHER
+
+"What is Python?"
+→ OTHER
+
+Do NOT classify general knowledge questions as RAG.
+
 ==================================================
-IMPORTANT
+IMPORTANT RULES
 ==================================================
 
-Use the conversation history.
+1. Use the conversation history.
 
-A short message by itself may look unrelated to
-scheduling.
+2. A short message may be SCHEDULING if it is clearly
+   answering a pending scheduling question.
 
-For example:
+3. Do not use RAG for general knowledge.
 
-"info@weaveapps.com"
+4. Do not use SCHEDULING merely because the word
+   "appointment" appeared somewhere in unrelated text.
 
-would normally be ambiguous.
+5. If the request is not scheduling and cannot reasonably
+   be answered from the application's knowledge base,
+   return OTHER.
 
-However, if the previous assistant message asks
-for an email address for an appointment, classify
-it as:
+6. When uncertain between RAG and OTHER, use OTHER.
 
+Return ONLY:
 SCHEDULING
-
-If the request is ambiguous but could reasonably be
-part of an appointment scheduling conversation,
-classify it as:
-
-SCHEDULING
+RAG
+or
+OTHER
 """
             },
             {
@@ -235,6 +284,7 @@ SCHEDULING
 
     if intent not in {
         "SCHEDULING",
+        "RAG",
         "OTHER",
     }:
         return "OTHER"
