@@ -1,6 +1,7 @@
 """PostgreSQL + pgvector RAG for appointment policies."""
 
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -8,6 +9,10 @@ from openai import OpenAI
 from sqlalchemy import text
 
 from backend.database import SessionLocal
+from backend.logging_utils import log_debug
+
+
+logger = logging.getLogger(__name__)
 
 
 EMBEDDING_MODEL = os.getenv(
@@ -196,7 +201,7 @@ def ingest_policies() -> int:
                 )
 
                 count += 1
-                print(
+                log_debug(logger,
                     f"Indexed {policy_file.name} "
                     f"chunk {chunk_index}"
                 )
@@ -273,7 +278,7 @@ def answer_policy_question(
     try:
         chunks = retrieve_policy_chunks(question)
     except Exception as exc:
-        print("RAG RETRIEVAL ERROR:", str(exc))
+        log_debug(logger, "RAG RETRIEVAL ERROR:", str(exc))
         return None
 
     if not chunks:

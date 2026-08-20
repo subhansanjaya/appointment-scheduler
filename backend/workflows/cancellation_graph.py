@@ -1,5 +1,6 @@
 from typing import TypedDict
 import json
+import logging
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -11,11 +12,15 @@ from backend.config import (
     OPENAI_API_KEY,
     AGENT_MODEL,
 )
+from backend.logging_utils import log_debug
 
 from backend.calendar_service import (
     find_events,
     delete_event,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 client = OpenAI(
@@ -261,31 +266,31 @@ Rules:
         "window_end": end_dt.isoformat(),
     }
 
-    print(
+    log_debug(logger,
         "\n=== CANCELLATION PARSED ==="
     )
 
-    print(
+    log_debug(logger,
         "LLM EXTRACTION:",
         data,
     )
 
-    print(
+    log_debug(logger,
         "RESOLVED DATE:",
         target_date,
     )
 
-    print(
+    log_debug(logger,
         "WINDOW START:",
         result["window_start"],
     )
 
-    print(
+    log_debug(logger,
         "WINDOW END:",
         result["window_end"],
     )
 
-    print(
+    log_debug(logger,
         "===========================\n"
     )
 
@@ -300,7 +305,7 @@ def find_cancellation_event(
     state: CancellationState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: find_cancellation_event"
     )
 
@@ -333,26 +338,26 @@ def find_cancellation_event(
     search_start = day_start.isoformat()
     search_end = day_end.isoformat()
 
-    print(
+    log_debug(logger,
         "\n=== CANCELLATION DAY SEARCH ==="
     )
 
-    print(
+    log_debug(logger,
         "TARGET:",
         target_dt.isoformat(),
     )
 
-    print(
+    log_debug(logger,
         "SEARCH START:",
         search_start,
     )
 
-    print(
+    log_debug(logger,
         "SEARCH END:",
         search_end,
     )
 
-    print(
+    log_debug(logger,
         "================================\n"
     )
 
@@ -379,7 +384,7 @@ def find_cancellation_event(
         []
     )
 
-    print(
+    log_debug(logger,
         "CANCELLATION EVENTS:",
         len(events),
     )
@@ -419,7 +424,7 @@ def find_cancellation_event(
 
             continue
 
-        print(
+        log_debug(logger,
             "EVENT:",
             event.get(
                 "summary",
@@ -451,7 +456,7 @@ def find_cancellation_event(
 
     if not matching_events:
 
-        print(
+        log_debug(logger,
             "NO EVENT FOUND AT REQUESTED TIME"
         )
 
@@ -471,7 +476,7 @@ def find_cancellation_event(
 
     event = matching_events[0]
 
-    print(
+    log_debug(logger,
         "\nMATCHING EVENT:",
         event,
     )
@@ -495,7 +500,7 @@ def request_cancellation_confirmation(
     state: CancellationState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: request_cancellation_confirmation"
     )
 
@@ -577,7 +582,7 @@ def cancel_event(
     state: CancellationState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: cancel_event"
     )
 
@@ -602,7 +607,7 @@ def cancel_event(
         event_id=event_id,
     )
 
-    print(
+    log_debug(logger,
         "DELETE RESULT:",
         result
     )
@@ -635,7 +640,7 @@ def confirm(
     state: CancellationState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: cancellation_confirm"
     )
 
@@ -681,7 +686,7 @@ def confirm(
             },
         )
 
-    print(
+    log_debug(logger,
         "FINAL CANCELLATION RESPONSE:",
         final_response
     )

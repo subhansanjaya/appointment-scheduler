@@ -1,8 +1,14 @@
+import logging
+
 from datetime import datetime
+
+
+logger = logging.getLogger(__name__)
 
 from backend.workflows.booking_service import (
     run_booking_workflow,
 )
+from backend.logging_utils import log_debug
 
 from backend.availability_service import (
     run_availability_workflow,
@@ -126,21 +132,21 @@ def run_scheduling_workflow(
         workflow_state or {}
     )
 
-    print(
+    log_debug(logger,
         "\n=== SCHEDULING WORKFLOW ==="
     )
 
-    print(
+    log_debug(logger,
         "ACTION:",
         action,
     )
 
-    print(
+    log_debug(logger,
         "WORKFLOW STATE:",
         workflow_state,
     )
 
-    print(
+    log_debug(logger,
         "============================\n"
     )
 

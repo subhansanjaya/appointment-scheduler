@@ -1,5 +1,6 @@
 from typing import TypedDict
 import json
+import logging
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -11,12 +12,16 @@ from backend.config import (
     OPENAI_API_KEY,
     AGENT_MODEL,
 )
+from backend.logging_utils import log_debug
 
 from backend.calendar_service import (
     find_available_slots,
     check_availability,
     create_event,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 client = OpenAI(
@@ -150,7 +155,7 @@ def _replace_date_in_iso(
         TypeError,
     ) as e:
 
-        print(
+        log_debug(logger,
             "DATE NORMALIZATION ERROR:",
             value,
             e,
@@ -300,26 +305,26 @@ def _calculate_exact_end(
         data["exact_start"] = start_dt.isoformat()
         data["exact_end"] = end_dt.isoformat()
 
-        print(
+        log_debug(logger,
             "\n=== EXACT TIME NORMALIZATION ==="
         )
 
-        print(
+        log_debug(logger,
             "Exact start:",
             data["exact_start"]
         )
 
-        print(
+        log_debug(logger,
             "Exact end:",
             data["exact_end"]
         )
 
-        print(
+        log_debug(logger,
             "Duration:",
             duration_minutes
         )
 
-        print(
+        log_debug(logger,
             "=================================\n"
         )
 
@@ -328,7 +333,7 @@ def _calculate_exact_end(
         TypeError,
     ) as e:
 
-        print(
+        log_debug(logger,
             "EXACT TIME NORMALIZATION ERROR:",
             e,
         )
@@ -564,14 +569,14 @@ def _convert_exact_time_to_availability_window(
         data["needs_slot_search"] = True
         data["auto_book"] = False
 
-        print("\n=== CONVERTED AVAILABILITY WINDOW ===")
-        print("Exact:", start.isoformat())
-        print("Window start:", data["window_start"])
-        print("Window end:", data["window_end"])
-        print("====================================\n")
+        log_debug(logger, "\n=== CONVERTED AVAILABILITY WINDOW ===")
+        log_debug(logger, "Exact:", start.isoformat())
+        log_debug(logger, "Window start:", data["window_start"])
+        log_debug(logger, "Window end:", data["window_end"])
+        log_debug(logger, "====================================\n")
 
     except (ValueError, TypeError) as e:
-        print(
+        log_debug(logger,
             "AVAILABILITY WINDOW CONVERSION ERROR:",
             exact_start,
             e,
@@ -592,7 +597,7 @@ def parse_request(
         "conversation_history",
         []
     )
-    
+
     colombo_tz = ZoneInfo(
         "Asia/Colombo"
     )
@@ -1196,15 +1201,15 @@ Return JSON only.
         .content
     )
 
-    print(
+    log_debug(logger,
         "\n=== RAW PARSER RESPONSE ==="
     )
 
-    print(
+    log_debug(logger,
         data
     )
 
-    print(
+    log_debug(logger,
         "===========================\n"
     )
 
@@ -1277,7 +1282,7 @@ Return JSON only.
         data,
         state["user_input"],
     )
-    
+
     # ========================================================
 # INHERIT DATE FROM PREVIOUS USER REQUEST
 # ========================================================
@@ -1347,23 +1352,23 @@ Return JSON only.
             .lower()
         )
 
-        print("\n=== DATE INHERIT DEBUG ===")
-        print("Current input:", state["user_input"])
-        print("Current text:", current_text)
-        print("Previous user message:", previous_user_message)
-        print(
+        log_debug(logger, "\n=== DATE INHERIT DEBUG ===")
+        log_debug(logger, "Current input:", state["user_input"])
+        log_debug(logger, "Current text:", current_text)
+        log_debug(logger, "Previous user message:", previous_user_message)
+        log_debug(logger,
             "Has @:",
             "@" in current_text
         )
-        print(
+        log_debug(logger,
             "Has tomorrow:",
             "tomorrow" in previous_user_message.lower()
         )
-        print(
+        log_debug(logger,
             "Has today:",
             "today" in previous_user_message.lower()
         )
-        print("==========================\n")
+        log_debug(logger, "==========================\n")
 
         if (
             "@" in current_text
@@ -1381,26 +1386,26 @@ Return JSON only.
                 previous_user_message,
             )
 
-            print(
+            log_debug(logger,
                 "\n=== INHERITED PREVIOUS DATE ==="
             )
 
-            print(
+            log_debug(logger,
                 "Previous request:",
                 previous_user_message,
             )
 
-            print(
+            log_debug(logger,
                 "Normalized start:",
                 data.get("exact_start"),
             )
 
-            print(
+            log_debug(logger,
                 "Normalized end:",
                 data.get("exact_end"),
             )
 
-            print(
+            log_debug(logger,
                 "================================\n"
             )
 
@@ -1409,26 +1414,26 @@ Return JSON only.
                 previous_user_message,
             )
 
-            print(
+            log_debug(logger,
                 "\n=== INHERITED PREVIOUS DATE ==="
             )
 
-            print(
+            log_debug(logger,
                 "Previous request:",
                 previous_user_message,
             )
 
-            print(
+            log_debug(logger,
                 "Normalized start:",
                 data.get("exact_start"),
             )
 
-            print(
+            log_debug(logger,
                 "Normalized end:",
                 data.get("exact_end"),
             )
 
-            print(
+            log_debug(logger,
                 "================================\n"
             )
 
@@ -1464,26 +1469,26 @@ Return JSON only.
 
     if is_time_follow_up:
 
-        print(
+        log_debug(logger,
             "\n=== TIME FOLLOW-UP DETECTED ==="
         )
 
-        print(
+        log_debug(logger,
             "Previous context:",
             previous_user_message,
         )
 
-        print(
+        log_debug(logger,
             "Current request:",
             state["user_input"],
         )
 
-        print(
+        log_debug(logger,
             "Previous was availability:",
             previous_is_availability,
         )
 
-        print(
+        log_debug(logger,
             "================================\n"
         )
 
@@ -1493,7 +1498,7 @@ Return JSON only.
 
         if previous_is_availability:
 
-            print(
+            log_debug(logger,
                 "AVAILABILITY FOLLOW-UP"
             )
 
@@ -1534,7 +1539,7 @@ Return JSON only.
 
         else:
 
-            print(
+            log_debug(logger,
                 "BOOKING FOLLOW-UP"
             )
 
@@ -1589,15 +1594,15 @@ Return JSON only.
                 "email"
             )
 
-    print(
+    log_debug(logger,
         "\n=== PARSED REQUEST ==="
     )
 
-    print(
+    log_debug(logger,
         data
     )
 
-    print(
+    log_debug(logger,
         "======================\n"
     )
 
@@ -1635,7 +1640,7 @@ def request_missing_information(
     state: BookingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: request_missing_information"
     )
 
@@ -1674,7 +1679,7 @@ def request_missing_information(
         "message": message,
     }
 
-    print(
+    log_debug(logger,
         "CLARIFICATION:",
         final_response
     )
@@ -1692,10 +1697,10 @@ def find_slots(
     state: BookingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: find_slots"
     )
-    
+
 
     result = find_available_slots(
         user_id=state["user_id"],
@@ -1706,7 +1711,7 @@ def find_slots(
         ],
     )
 
-    print(
+    log_debug(logger,
         "AVAILABLE SLOTS:",
         result
     )
@@ -1753,7 +1758,7 @@ def select_slot(
     state: BookingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: select_slot"
     )
 
@@ -1764,7 +1769,7 @@ def select_slot(
 
     if not slots:
 
-        print(
+        log_debug(logger,
             "NO AVAILABLE SLOTS"
         )
 
@@ -1774,7 +1779,7 @@ def select_slot(
 
     selected_slot = slots[0]
 
-    print(
+    log_debug(logger,
         "SELECTED SLOT:",
         selected_slot
     )
@@ -1792,7 +1797,7 @@ def check_exact_time(
     state: BookingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: check_exact_time"
     )
 
@@ -1828,7 +1833,7 @@ def check_exact_time(
 
         if end_dt <= start_dt:
 
-            print(
+            log_debug(logger,
                 "INVALID TIME RANGE:",
                 start,
                 "->",
@@ -1852,7 +1857,7 @@ def check_exact_time(
 
     except Exception as e:
 
-        print(
+        log_debug(logger,
             "AVAILABILITY ERROR:",
             str(e)
         )
@@ -1864,7 +1869,7 @@ def check_exact_time(
             }
         }
 
-    print(
+    log_debug(logger,
         "AVAILABILITY RESULT:",
         result
     )
@@ -1892,7 +1897,7 @@ def check_exact_time(
         "available"
     ):
 
-        print(
+        log_debug(logger,
             "REQUESTED TIME IS AVAILABLE"
         )
 
@@ -1907,7 +1912,7 @@ def check_exact_time(
     # Not available
     # --------------------------------------------------------
 
-    print(
+    log_debug(logger,
         "REQUESTED TIME IS NOT AVAILABLE"
     )
 
@@ -1965,7 +1970,7 @@ def book_appointment(
     state: BookingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: book_appointment"
     )
 
@@ -1975,7 +1980,7 @@ def book_appointment(
 
     if not selected_slot:
 
-        print(
+        log_debug(logger,
             "NO SLOT TO BOOK"
         )
 
@@ -1998,7 +2003,7 @@ def book_appointment(
 
     if not email:
 
-        print(
+        log_debug(logger,
             "NO EMAIL - BOOKING BLOCKED"
         )
 
@@ -2023,7 +2028,7 @@ def book_appointment(
         email=email,
     )
 
-    print(
+    log_debug(logger,
         "BOOKING RESULT:",
         result
     )
@@ -2041,7 +2046,7 @@ def confirm(
     state: BookingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: confirm"
     )
 
@@ -2134,7 +2139,7 @@ def confirm(
                 "available_slots": [],
             }
 
-    print(
+    log_debug(logger,
         "FINAL RESPONSE:",
         final_response
     )

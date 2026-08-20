@@ -1,5 +1,10 @@
+import logging
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
+
+logger = logging.getLogger(__name__)
 
 from openai import OpenAI
 
@@ -7,6 +12,7 @@ from backend.config import (
     OPENAI_API_KEY,
     AGENT_MODEL,
 )
+from backend.logging_utils import log_debug
 
 from backend.conversation_service import (
     get_or_create_conversation,
@@ -359,15 +365,15 @@ def save_booking_context(
             booking_state,
         )
 
-        print(
+        log_debug(logger,
             "\n=== SAVED BOOKING CONTEXT ==="
         )
 
-        print(
+        log_debug(logger,
             booking_state
         )
 
-        print(
+        log_debug(logger,
             "=============================\n"
         )
 
@@ -375,15 +381,15 @@ def save_booking_context(
 
     except Exception as e:
 
-        print(
+        log_debug(logger,
             "\n=== BOOKING CONTEXT ERROR ==="
         )
 
-        print(
+        log_debug(logger,
             str(e)
         )
 
-        print(
+        log_debug(logger,
             "==============================\n"
         )
 
@@ -423,15 +429,15 @@ def run_agent(
         conversation.id,
     )
 
-    print(
+    log_debug(logger,
         "\n=== WORKFLOW STATE ==="
     )
 
-    print(
+    log_debug(logger,
         workflow_state
     )
 
-    print(
+    log_debug(logger,
         "======================\n"
     )
 
@@ -520,7 +526,7 @@ def run_agent(
                 event_id=event_id,
             )
 
-            print(
+            log_debug(logger,
                 "DELETE RESULT:",
                 result,
             )
@@ -676,7 +682,7 @@ def run_agent(
                 end=new_end,
             )
 
-            print(
+            log_debug(logger,
                 "RESCHEDULE RESULT:",
                 result,
             )
@@ -780,16 +786,16 @@ def run_agent(
         )
     ):
 
-        print(
+        log_debug(logger,
             "\n=== PENDING SLOT SELECTION ==="
         )
 
-        print(
+        log_debug(logger,
             "USER RESPONSE:",
             user_input,
         )
 
-        print(
+        log_debug(logger,
             "AVAILABLE SLOTS:",
             workflow_state.get(
                 "available_slots",
@@ -797,7 +803,7 @@ def run_agent(
             ),
         )
 
-        print(
+        log_debug(logger,
             "===============================\n"
         )
 
@@ -1048,15 +1054,15 @@ def run_agent(
             conversation_history=messages,
         )
 
-        print(
+        log_debug(logger,
             "\n=== BOOKING AFTER EMAIL ==="
         )
 
-        print(
+        log_debug(logger,
             result
         )
 
-        print(
+        log_debug(logger,
             "===========================\n"
         )
 
@@ -1151,21 +1157,21 @@ def run_agent(
 
         if is_time_followup:
 
-            print(
+            log_debug(logger,
                 "\n=== BOOKING TIME FOLLOW-UP ==="
             )
 
-            print(
+            log_debug(logger,
                 "PREVIOUS STATE:",
                 workflow_state,
             )
 
-            print(
+            log_debug(logger,
                 "CURRENT MESSAGE:",
                 user_input,
             )
 
-            print(
+            log_debug(logger,
                 "================================\n"
             )
 
@@ -1176,15 +1182,15 @@ def run_agent(
                 conversation_history=messages,
             )
 
-            print(
+            log_debug(logger,
                 "\n=== FOLLOW-UP BOOKING RESULT ==="
             )
 
-            print(
+            log_debug(logger,
                 result
             )
 
-            print(
+            log_debug(logger,
                 "=================================\n"
             )
 
@@ -1280,15 +1286,15 @@ def run_agent(
         conversation_history=messages,
     )
 
-    print(
+    log_debug(logger,
         "\n=== INTENT ==="
     )
 
-    print(
+    log_debug(logger,
         intent
     )
 
-    print(
+    log_debug(logger,
         "===============\n"
     )
 
@@ -1303,15 +1309,15 @@ def run_agent(
             conversation_history=messages,
         )
 
-        print(
+        log_debug(logger,
             "\n=== ACTION ==="
         )
 
-        print(
+        log_debug(logger,
             action
         )
 
-        print(
+        log_debug(logger,
             "===============\n"
         )
 
@@ -1347,15 +1353,15 @@ def run_agent(
             conversation_history=messages,
         )
 
-        print(
+        log_debug(logger,
             "\n=== SCHEDULING RESULT ==="
         )
 
-        print(
+        log_debug(logger,
             result
         )
 
-        print(
+        log_debug(logger,
             "==========================\n"
         )
 

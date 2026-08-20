@@ -1,5 +1,6 @@
 from typing import TypedDict
 import json
+import logging
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -11,12 +12,16 @@ from backend.config import (
     OPENAI_API_KEY,
     AGENT_MODEL,
 )
+from backend.logging_utils import log_debug
 
 from backend.calendar_service import (
     find_events,
     check_availability,
     update_event,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 client = OpenAI(
@@ -164,13 +169,13 @@ Rules:
         .content
     )
 
-    print(
+    log_debug(logger,
         "\n=== RESCHEDULING PARSED ==="
     )
 
-    print(data)
+    log_debug(logger, data)
 
-    print(
+    log_debug(logger,
         "============================\n"
     )
 
@@ -185,7 +190,7 @@ def find_rescheduling_event(
     state: ReschedulingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: find_rescheduling_event"
     )
 
@@ -195,7 +200,7 @@ def find_rescheduling_event(
         end=state["old_end"],
     )
 
-    print(
+    log_debug(logger,
         "FIND EVENTS RESULT:",
         result
     )
@@ -231,7 +236,7 @@ def find_rescheduling_event(
 
     event = events[0]
 
-    print(
+    log_debug(logger,
         "MATCHING EVENT:",
         event
     )
@@ -252,7 +257,7 @@ def check_new_time(
     state: ReschedulingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: check_new_time"
     )
 
@@ -262,7 +267,7 @@ def check_new_time(
         end=state["new_end"],
     )
 
-    print(
+    log_debug(logger,
         "NEW TIME AVAILABILITY:",
         result
     )
@@ -345,7 +350,7 @@ def request_rescheduling_confirmation(
     state: ReschedulingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: request_rescheduling_confirmation"
     )
 
@@ -404,7 +409,7 @@ def reschedule_event(
     state: ReschedulingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: reschedule_event"
     )
 
@@ -451,7 +456,7 @@ def reschedule_event(
         end=new_end,
     )
 
-    print(
+    log_debug(logger,
         "UPDATE RESULT:",
         result
     )
@@ -489,7 +494,7 @@ def confirm(
     state: ReschedulingState
 ):
 
-    print(
+    log_debug(logger,
         "\nNODE: rescheduling_confirm"
     )
 
@@ -544,7 +549,7 @@ def confirm(
             },
         )
 
-    print(
+    log_debug(logger,
         "FINAL RESCHEDULING RESPONSE:",
         final_response
     )

@@ -1,4 +1,8 @@
+import logging
 import os
+
+
+logger = logging.getLogger(__name__)
 
 from fastapi import (
     Depends,
@@ -23,6 +27,7 @@ from starlette.middleware.sessions import (
 )
 
 from backend.agent import run_agent
+from backend.logging_utils import log_debug
 from backend.auth import oauth
 from backend.database import get_db
 from backend.models import (
@@ -76,16 +81,16 @@ async def google_login(
         "google_callback"
     )
 
-    print(
+    log_debug(logger,
         "\n=== GOOGLE LOGIN ==="
     )
 
-    print(
+    log_debug(logger,
         "Redirect URI:",
         redirect_uri,
     )
 
-    print(
+    log_debug(logger,
         "====================\n"
     )
 
@@ -237,26 +242,26 @@ async def google_callback(
         "user_id"
     ] = user.id
 
-    print(
+    log_debug(logger,
         "\n=== GOOGLE LOGIN SUCCESS ==="
     )
 
-    print(
+    log_debug(logger,
         "User ID:",
         user.id,
     )
 
-    print(
+    log_debug(logger,
         "Email:",
         user.email,
     )
 
-    print(
+    log_debug(logger,
         "Has new refresh token:",
         bool(refresh_token),
     )
 
-    print(
+    log_debug(logger,
         "============================\n"
     )
 
@@ -386,21 +391,21 @@ def chat(
             )
         }
 
-    print(
+    log_debug(logger,
         "\n=== CHAT REQUEST ==="
     )
 
-    print(
+    log_debug(logger,
         "User ID:",
         user_id,
     )
 
-    print(
+    log_debug(logger,
         "Message:",
         user_input,
     )
 
-    print(
+    log_debug(logger,
         "====================\n"
     )
 
@@ -421,7 +426,7 @@ def chat(
     return {
         "response": response
     }
-    
+
 # ============================================================
 # AWS LAMBDA HANDLER
 # ============================================================

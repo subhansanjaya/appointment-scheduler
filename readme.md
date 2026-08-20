@@ -2,8 +2,6 @@
 
 A conversational appointment scheduler built with FastAPI, React, OpenAI and Google Calendar. The project demonstrates an AI agent architecture where natural-language scheduling requests are interpreted by an LLM and translated into calendar actions through a tool execution layer.
 
-![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture.png)
-
 ![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/main/capture2.png)
 
 ![screenshot](https://github.com/subhansanjaya/appointment-scheduler/blob/feature/v2-multi-user/capture3.png)

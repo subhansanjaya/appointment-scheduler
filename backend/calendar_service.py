@@ -11,7 +11,13 @@ Provides Google Calendar integration:
 """
 
 import json
+import logging
 import os
+
+
+logger = logging.getLogger(__name__)
+
+from backend.logging_utils import log_debug
 
 import boto3
 from googleapiclient.discovery import build
@@ -74,7 +80,7 @@ def get_google_token_from_secrets_manager():
         return json.loads(secret_string)
 
     except Exception as e:
-        print("SECRETS MANAGER ERROR:", str(e))
+        log_debug(logger, "SECRETS MANAGER ERROR:", str(e))
         raise
 
 
@@ -133,7 +139,7 @@ def get_lambda_service():
         creds = Credentials.from_authorized_user_info(token_data, SCOPES)
 
     except Exception as e:
-        print("GOOGLE CREDENTIAL ERROR:", str(e))
+        log_debug(logger, "GOOGLE CREDENTIAL ERROR:", str(e))
         raise
 
     # Refresh expired credentials
@@ -144,7 +150,7 @@ def get_lambda_service():
                 creds.refresh(Request())
 
             except Exception as e:
-                print("GOOGLE TOKEN REFRESH ERROR:", str(e))
+                log_debug(logger, "GOOGLE TOKEN REFRESH ERROR:", str(e))
                 raise
 
         else:
@@ -215,15 +221,15 @@ def create_event(user_id, title, start, end, email):
             service.events().insert(calendarId="primary", body=event).execute()
         )
 
-        print("\n=== GOOGLE CALENDAR RESPONSE ===")
+        log_debug(logger, "\n=== GOOGLE CALENDAR RESPONSE ===")
 
-        print("Event ID:", created_event.get("id"))
+        log_debug(logger, "Event ID:", created_event.get("id"))
 
-        print("HTML Link:", created_event.get("htmlLink"))
+        log_debug(logger, "HTML Link:", created_event.get("htmlLink"))
 
-        print("Status:", created_event.get("status"))
+        log_debug(logger, "Status:", created_event.get("status"))
 
-        print("================================\n")
+        log_debug(logger, "================================\n")
 
         if not created_event.get("id"):
             return {"error": "Event creation failed"}
@@ -237,7 +243,7 @@ def create_event(user_id, title, start, end, email):
 
     except Exception as e:
 
-        print("CALENDAR ERROR:", str(e))
+        log_debug(logger, "CALENDAR ERROR:", str(e))
 
         return {"error": str(e)}
 
@@ -259,10 +265,10 @@ def check_availability(user_id, start, end):
     start = normalize(start)
     end = normalize(end)
 
-    print("\n=== AVAILABILITY DEBUG ===")
-    print("START:", start)
-    print("END:", end)
-    print("==========================\n")
+    log_debug(logger, "\n=== AVAILABILITY DEBUG ===")
+    log_debug(logger, "START:", start)
+    log_debug(logger, "END:", end)
+    log_debug(logger, "==========================\n")
 
     try:
 
@@ -280,10 +286,10 @@ def check_availability(user_id, start, end):
 
         items = events_result.get("items", [])
 
-        print("EVENT COUNT:", len(items))
+        log_debug(logger, "EVENT COUNT:", len(items))
 
         for event in items:
-            print(
+            log_debug(logger,
                 " -",
                 event.get("summary"),
                 "|",
@@ -307,7 +313,7 @@ def check_availability(user_id, start, end):
 
     except Exception as e:
 
-        print("AVAILABILITY ERROR:", str(e))
+        log_debug(logger, "AVAILABILITY ERROR:", str(e))
 
         return {"error": str(e)}
 
@@ -419,7 +425,7 @@ def find_available_slots(
 
     except Exception as e:
 
-        print("FIND SLOTS ERROR:", str(e))
+        log_debug(logger, "FIND SLOTS ERROR:", str(e))
 
         return {"error": str(e)}
 
@@ -448,10 +454,10 @@ def find_events(
     start = normalize(start)
     end = normalize(end)
 
-    print("\n=== FIND EVENTS ===")
-    print("START:", start)
-    print("END:", end)
-    print("===================\n")
+    log_debug(logger, "\n=== FIND EVENTS ===")
+    log_debug(logger, "START:", start)
+    log_debug(logger, "END:", end)
+    log_debug(logger, "===================\n")
 
     try:
 
@@ -472,7 +478,7 @@ def find_events(
             []
         )
 
-        print(
+        log_debug(logger,
             "EVENT COUNT:",
             len(events)
         )
@@ -494,7 +500,7 @@ def find_events(
 
     except Exception as e:
 
-        print(
+        log_debug(logger,
             "FIND EVENTS ERROR:",
             str(e)
         )
@@ -520,7 +526,7 @@ def delete_event(user_id, event_id):
 
     except Exception as e:
 
-        print("DELETE ERROR:", str(e))
+        log_debug(logger, "DELETE ERROR:", str(e))
 
         return {"error": str(e)}
 
@@ -584,26 +590,26 @@ def update_event(
             .execute()
         )
 
-        print(
+        log_debug(logger,
             "\n=== GOOGLE CALENDAR UPDATE ==="
         )
 
-        print(
+        log_debug(logger,
             "Event ID:",
             updated_event.get("id"),
         )
 
-        print(
+        log_debug(logger,
             "HTML Link:",
             updated_event.get("htmlLink"),
         )
 
-        print(
+        log_debug(logger,
             "Status:",
             updated_event.get("status"),
         )
 
-        print(
+        log_debug(logger,
             "===============================\n"
         )
 
@@ -637,7 +643,7 @@ def update_event(
 
     except Exception as e:
 
-        print(
+        log_debug(logger,
             "UPDATE EVENT ERROR:",
             str(e)
         )

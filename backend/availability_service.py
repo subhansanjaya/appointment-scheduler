@@ -1,6 +1,12 @@
+import logging
+
 from backend.calendar_service import (
     find_available_slots,
 )
+from backend.logging_utils import log_debug
+
+
+logger = logging.getLogger(__name__)
 
 
 def run_availability_workflow(
@@ -50,65 +56,65 @@ def run_availability_workflow(
         state
     )
 
-    print(
+    log_debug(logger,
         "\n=== AVAILABILITY PARSED REQUEST ==="
     )
 
-    print(
+    log_debug(logger,
         "User input:",
         user_input,
     )
 
-    print(
+    log_debug(logger,
         "Window start:",
         parsed.get(
             "window_start"
         ),
     )
 
-    print(
+    log_debug(logger,
         "Window end:",
         parsed.get(
             "window_end"
         ),
     )
 
-    print(
+    log_debug(logger,
         "Exact start:",
         parsed.get(
             "exact_start"
         ),
     )
 
-    print(
+    log_debug(logger,
         "Exact end:",
         parsed.get(
             "exact_end"
         ),
     )
 
-    print(
+    log_debug(logger,
         "Duration:",
         parsed.get(
             "duration_minutes"
         ),
     )
 
-    print(
+    log_debug(logger,
         "Needs slot search:",
         parsed.get(
             "needs_slot_search"
         ),
     )
 
-    print(
+    log_debug(logger,
         "Auto book:",
         parsed.get(
             "auto_book"
         ),
     )
 
-    print(
+    log_debug(logger,
         "===================================\n"
     )
 
@@ -169,26 +175,26 @@ def run_availability_workflow(
     # FIND AVAILABLE SLOTS
     # ========================================================
 
-    print(
+    log_debug(logger,
         "\n=== FINDING AVAILABLE SLOTS ==="
     )
 
-    print(
+    log_debug(logger,
         "Start:",
         window_start,
     )
 
-    print(
+    log_debug(logger,
         "End:",
         window_end,
     )
 
-    print(
+    log_debug(logger,
         "Duration:",
         duration_minutes,
     )
 
-    print(
+    log_debug(logger,
         "================================\n"
     )
 
@@ -203,15 +209,15 @@ def run_availability_workflow(
     # CALENDAR RESULT
     # ========================================================
 
-    print(
+    log_debug(logger,
         "\n=== CALENDAR AVAILABILITY RESULT ==="
     )
 
-    print(
+    log_debug(logger,
         result
     )
 
-    print(
+    log_debug(logger,
         "====================================\n"
     )
 

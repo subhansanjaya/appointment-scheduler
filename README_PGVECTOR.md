@@ -1,7 +1,5 @@
 # PostgreSQL + pgvector RAG
 
-This replaces the temporary JSON vector index with PostgreSQL + pgvector.
-
 ## Install
 
 ```bash
