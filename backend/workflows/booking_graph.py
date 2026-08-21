@@ -1,11 +1,12 @@
 from typing import TypedDict
 import json
 import logging
+import time
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 from langgraph.graph import StateGraph, START, END
 
 from backend.config import (
@@ -624,9 +625,17 @@ def parse_request(
         []
     )
 
+    # Keep only recent conversation turns in the LLM prompt.
+    #
+    # The booking workflow already persists the important
+    # booking context separately. Sending the entire historical
+    # conversation to gpt-4o can cause unnecessarily large
+    # requests and TPM rate-limit failures.
+    recent_history = history[-4:]
+
     history_lines = []
 
-    for message in history:
+    for message in recent_history:
 
         role = message.get(
             "role",
@@ -1181,19 +1190,95 @@ FINAL RULE
 Return JSON only.
 """
 
-    response = client.chat.completions.create(
-        model=AGENT_MODEL,
-        temperature=0,
-        messages=[
-            {
-                "role": "system",
-                "content": prompt,
-            }
-        ],
-        response_format={
-            "type": "json_object"
-        },
+    # ========================================================
+    # OPENAI REQUEST DIAGNOSTICS
+    # ========================================================
+
+    log_debug(
+        logger,
+        "OpenAI parser prompt characters:",
+        len(prompt),
     )
+
+    log_debug(
+        logger,
+        "Recent conversation messages:",
+        len(recent_history),
+    )
+
+    # ========================================================
+    # OPENAI REQUEST WITH RATE-LIMIT RETRY
+    # ========================================================
+    #
+    # A transient 429 should not immediately fail the entire
+    # booking workflow. Retry a small number of times with
+    # exponential backoff.
+    #
+    # The prompt is also intentionally limited to recent
+    # conversation history above so that normal booking
+    # follow-ups consume substantially fewer tokens.
+    #
+
+    max_retries = 3
+
+    response = None
+
+    for attempt in range(
+        max_retries
+    ):
+
+        try:
+
+            response = client.chat.completions.create(
+                model=AGENT_MODEL,
+                temperature=0,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": prompt,
+                    }
+                ],
+                response_format={
+                    "type": "json_object"
+                },
+            )
+
+            break
+
+        except RateLimitError as exc:
+
+            if attempt >= max_retries - 1:
+
+                logger.exception(
+                    "OpenAI rate limit exceeded after %s attempts.",
+                    max_retries,
+                )
+
+                raise
+
+            wait_seconds = (
+                2 ** attempt
+            )
+
+            logger.warning(
+                "OpenAI rate limit reached. "
+                "Retrying in %s seconds "
+                "(attempt %s/%s). Error: %s",
+                wait_seconds,
+                attempt + 1,
+                max_retries,
+                exc,
+            )
+
+            time.sleep(
+                wait_seconds
+            )
+
+    if response is None:
+
+        raise RuntimeError(
+            "OpenAI request did not return a response."
+        )
 
     data = json.loads(
         response.choices[0]

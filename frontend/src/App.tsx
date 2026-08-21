@@ -60,6 +60,8 @@ export default function App() {
 
           } else {
 
+            setUser(null);
+
             setAuthenticated(
               false
             );
@@ -68,8 +70,11 @@ export default function App() {
         } catch (error) {
 
           console.error(
+            "Authentication check failed:",
             error
           );
+
+          setUser(null);
 
           setAuthenticated(
             false
@@ -96,6 +101,7 @@ export default function App() {
       } catch (error) {
 
         console.error(
+          "Logout failed:",
           error
         );
       }

@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://d32obth2v9hhu6.cloudfront.net",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -352,12 +352,18 @@ def logout(
 # CHAT
 # ============================================================
 
+# ============================================================
+# CHAT
+# ============================================================
+
 @app.post("/chat")
 def chat(
     payload: dict,
     request: Request,
     db: Session = Depends(get_db),
 ):
+
+    start_time = time.time()
 
     # ========================================================
     # AUTHENTICATION
@@ -375,6 +381,7 @@ def chat(
             )
         }
 
+
     # ========================================================
     # USER INPUT
     # ========================================================
@@ -391,33 +398,92 @@ def chat(
             )
         }
 
-    log_debug(logger,
+
+    log_debug(
+        logger,
         "\n=== CHAT REQUEST ==="
     )
 
-    log_debug(logger,
+    log_debug(
+        logger,
         "User ID:",
         user_id,
     )
 
-    log_debug(logger,
+    log_debug(
+        logger,
         "Message:",
         user_input,
     )
 
-    log_debug(logger,
+    log_debug(
+        logger,
         "====================\n"
     )
+
 
     # ========================================================
     # RUN AGENT
     # ========================================================
 
-    response = run_agent(
-        db,
-        user_id,
-        user_input,
+    agent_start = time.time()
+
+
+    try:
+
+        response = run_agent(
+            db,
+            user_id,
+            user_input,
+        )
+
+    except Exception as exc:
+
+        logger.exception(
+            "Agent execution failed"
+        )
+
+        return {
+            "error":
+                "The scheduling service encountered an internal error."
+        }
+
+
+    agent_duration = time.time() - agent_start
+
+
+    # ========================================================
+    # LOG RESPONSE
+    # ========================================================
+
+    log_debug(
+        logger,
+        "=== AGENT RESPONSE ==="
     )
+
+    log_debug(
+        logger,
+        "Response:",
+        response,
+    )
+
+    log_debug(
+        logger,
+        "Agent duration:",
+        f"{agent_duration:.2f}s",
+    )
+
+    log_debug(
+        logger,
+        "Total request duration:",
+        f"{time.time() - start_time:.2f}s",
+    )
+
+    log_debug(
+        logger,
+        "======================"
+    )
+
 
     # ========================================================
     # RETURN AI RESPONSE
@@ -426,7 +492,6 @@ def chat(
     return {
         "response": response
     }
-
 # ============================================================
 # AWS LAMBDA HANDLER
 # ============================================================
