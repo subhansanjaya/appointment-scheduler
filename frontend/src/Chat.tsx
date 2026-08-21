@@ -273,196 +273,192 @@ const handleVoiceInput = () => {
   // SEND MESSAGE
   // ==========================================================
 
-  const handleSend = async (
-    messageOverride?: string
-  ) => {
+const handleSend = async (
+  messageOverride?: string
+) => {
+  const message = (
+    messageOverride ??
+    input
+  ).trim();
 
-    const message =
-      (
-        messageOverride ??
-        input
-      ).trim();
+  if (!message || loading) {
+    return;
+  }
+
+  // ==========================================================
+  // USER MESSAGE
+  // ==========================================================
+
+  const userMessage: Message = {
+    role: "user",
+    text: message,
+  };
+
+  setMessages((prev) => [
+    ...prev,
+    userMessage,
+  ]);
+
+  // ==========================================================
+  // CLEAR INPUT
+  // ==========================================================
+
+  setInput("");
+  setLoading(true);
+
+  if (inputRef.current) {
+    inputRef.current.style.height = "auto";
+  }
+
+  // ==========================================================
+  // CALL BACKEND
+  // ==========================================================
+
+  try {
+    console.log(
+      "Sending message to backend:",
+      message
+    );
+
+    const result = await sendMessage(
+      message
+    );
+
+    console.log(
+      "Backend result:",
+      result
+    );
+
+    // ========================================================
+    // AUTHENTICATION
+    // ========================================================
 
     if (
-      !message ||
-      loading
+      result.error ===
+      "Authentication required"
     ) {
+      onLogout();
+      return;
+    }
+
+    // ========================================================
+    // ERROR
+    // ========================================================
+
+    if (result.error) {
+      const errorMessage: Message = {
+        role: "ai",
+        text: result.error,
+      };
+
+      setMessages((prev) => [
+        ...prev,
+        errorMessage,
+      ]);
 
       return;
     }
 
-    // --------------------------------------------------------
-    // USER MESSAGE
-    // --------------------------------------------------------
+    // ========================================================
+    // RESPONSE
+    // ========================================================
 
-    const userMessage: Message = {
-      role: "user",
+    const response = result.response;
 
-      text: message,
+    console.log(
+      "Scheduling response:",
+      response
+    );
+
+    // ========================================================
+    // STRUCTURED RESPONSE
+    // ========================================================
+
+    if (
+      response &&
+      typeof response === "object"
+    ) {
+      const messageText =
+        typeof response.message === "string"
+          ? response.message
+          : response.success
+            ? "Your request was completed successfully."
+            : "I couldn't process that request.";
+
+      const aiMessage: Message = {
+        role: "ai",
+        text: messageText,
+        schedulingData: response,
+      };
+
+      setMessages((prev) => [
+        ...prev,
+        aiMessage,
+      ]);
+
+      return;
+    }
+
+    // ========================================================
+    // NORMAL TEXT RESPONSE
+    // ========================================================
+
+    if (
+      typeof response === "string"
+    ) {
+      const aiMessage: Message = {
+        role: "ai",
+        text: response,
+      };
+
+      setMessages((prev) => [
+        ...prev,
+        aiMessage,
+      ]);
+
+      return;
+    }
+
+    // ========================================================
+    // EMPTY RESPONSE
+    // ========================================================
+
+    const emptyResponseMessage: Message = {
+      role: "ai",
+      text:
+        "The server completed the request but returned an empty response.",
     };
 
     setMessages((prev) => [
-
       ...prev,
-
-      userMessage,
-
+      emptyResponseMessage,
     ]);
 
-    // --------------------------------------------------------
-    // CLEAR INPUT
-    // --------------------------------------------------------
+  } catch (error) {
+    console.error(
+      "Chat error:",
+      error
+    );
 
-    setInput("");
+    const errorMessage: Message = {
+      role: "ai",
+      text:
+        "Unable to connect to the scheduling service. Please check your connection and try again.",
+    };
 
-    setLoading(true);
+    setMessages((prev) => [
+      ...prev,
+      errorMessage,
+    ]);
 
-    if (inputRef.current) {
+  } finally {
+    setLoading(false);
 
-      inputRef.current.style.height =
-        "auto";
-    }
-
-    // --------------------------------------------------------
-    // CALL BACKEND
-    // --------------------------------------------------------
-
-    try {
-
-      const result =
-        await sendMessage(
-          message
-        );
-
-      // ------------------------------------------------------
-      // AUTHENTICATION EXPIRED
-      // ------------------------------------------------------
-
-      if (
-        result.error ===
-        "Authentication required"
-      ) {
-
-        onLogout();
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // BACKEND ERROR
-      // ------------------------------------------------------
-
-      if (result.error) {
-
-        setMessages((prev) => [
-
-          ...prev,
-
-          {
-            role: "ai",
-
-            text:
-              result.error!,
-          },
-
-        ]);
-
-        return;
-      }
-
-      // ------------------------------------------------------
-      // RESPONSE
-      // ------------------------------------------------------
-
-      const response =
-        result.response;
-
-      // ------------------------------------------------------
-      // STRUCTURED RESPONSE
-      // ------------------------------------------------------
-
-      if (
-        response &&
-        typeof response === "object"
-      ) {
-
-        const aiMessage: Message = {
-
-          role: "ai",
-
-          text:
-            response.message ??
-            "I couldn't process that request.",
-
-          schedulingData:
-            response,
-        };
-
-        setMessages((prev) => [
-
-          ...prev,
-
-          aiMessage,
-
-        ]);
-
-      }
-
-      // ------------------------------------------------------
-      // NORMAL TEXT RESPONSE
-      // ------------------------------------------------------
-
-      else {
-
-        const aiMessage: Message = {
-
-          role: "ai",
-
-          text:
-            response ??
-            "I couldn't process that request.",
-        };
-
-        setMessages((prev) => [
-
-          ...prev,
-
-          aiMessage,
-
-        ]);
-      }
-
-    } catch (error) {
-
-      console.error(
-        "Chat error:",
-        error
-      );
-
-      setMessages((prev) => [
-
-        ...prev,
-
-        {
-          role: "ai",
-
-          text:
-            "Sorry, I couldn't connect to the server. Please try again.",
-        },
-
-      ]);
-
-    } finally {
-
-      setLoading(false);
-
-      setTimeout(() => {
-
-        inputRef.current?.focus();
-
-      }, 50);
-    }
-  };
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+  }
+};
 
   // ==========================================================
   // SELECT APPOINTMENT SLOT
